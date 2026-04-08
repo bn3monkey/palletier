@@ -106,7 +106,10 @@ class ChatNotifier extends Notifier<List<ChatMessage>> {
   }
 
   String _buildPrompt(String userInput, int colorCount) {
-    return '당신은 색상 팔레트 추천 전문가입니다. '
+    final sb = StringBuffer();
+
+    // System instruction
+    sb.writeln('당신은 색상 팔레트 추천 전문가입니다. '
         '사용자가 원하는 느낌을 설명하면, $colorCount개의 색상으로 구성된 팔레트를 추천해주세요. '
         '반드시 아래 JSON 형식으로 응답하세요: '
         '```json\n'
@@ -115,7 +118,21 @@ class ChatNotifier extends Notifier<List<ChatMessage>> {
         '"r": 0, "g": 0, "b": 0, '
         '"description": "이 색상을 선택한 이유 (한국어, 1문장)"}]}\n'
         '```\n'
-        'JSON 블록 앞뒤에 추가 설명을 자유롭게 작성해도 됩니다.\n\n'
-        '사용자 요청: $userInput';
+        'JSON 블록 앞뒤에 추가 설명을 자유롭게 작성해도 됩니다.\n');
+
+    // Include conversation history for context
+    // Skip the last 2 entries (current user msg + empty assistant msg)
+    final history = state.length > 2 ? state.sublist(0, state.length - 2) : <ChatMessage>[];
+    if (history.isNotEmpty) {
+      sb.writeln('\n--- 이전 대화 기록 ---');
+      for (final msg in history) {
+        final role = msg.role == MessageRole.user ? '사용자' : '어시스턴트';
+        sb.writeln('$role: ${msg.content}');
+      }
+      sb.writeln('--- 대화 기록 끝 ---\n');
+    }
+
+    sb.writeln('사용자: $userInput');
+    return sb.toString();
   }
 }
